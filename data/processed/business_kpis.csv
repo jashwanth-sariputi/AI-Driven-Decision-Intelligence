@@ -1,0 +1,11 @@
+KPI,Value
+total_customers,96096.0
+total_revenue,16008872.120000001
+average_customer_value,166.5924920912421
+average_purchase_frequency,1.0348089410589412
+median_recency_days,268.0
+retention_rate,10.056610056610056
+churn_rate,89.94338994338995
+repeat_customer_rate,3.1187562437562435
+at_risk_high_value_customers,8788.0
+revenue_at_risk,2750081.56

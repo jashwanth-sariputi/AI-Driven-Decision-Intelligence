@@ -1,0 +1,5 @@
+priority,customers,total_spend,average_churn_probability
+Critical Priority,804,289815.5,75.24
+High Priority,5523,350898.05,73.67
+Low Priority,13972,1926281.94,30.06
+Medium Priority,75797,13441876.63,55.12

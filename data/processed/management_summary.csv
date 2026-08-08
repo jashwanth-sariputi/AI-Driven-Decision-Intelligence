@@ -1,0 +1,10 @@
+Metric,Value
+Total Customers,96096.0
+High Risk Customers,6327.0
+Critical Priority Customers,804.0
+Total Customer Revenue,16008872.12
+High Risk Revenue,640713.55
+Critical Revenue,289815.5
+High Risk Revenue %,4.0
+Critical Revenue %,1.81
+Model ROC-AUC,0.7421

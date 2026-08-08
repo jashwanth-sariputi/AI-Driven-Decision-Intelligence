@@ -1,0 +1,8 @@
+customer_segment,recommended_action,customer_count,total_revenue,avg_customer_value
+Loyal Customers,"Use loyalty programs, cross-selling, and personalized recommendations",31726,4524869.68,142.6233902792662
+High Value Active,Protect relationship with personalized offers and premium services,9204,2801902.06,304.42221425467187
+At Risk High Value,Launch targeted win-back campaigns and personalized incentives,8788,2750081.56,312.93599908966775
+Potential Loyal,Encourage repeat purchases through personalized offers,22226,2587394.0,116.41293980023396
+Champions,"Reward loyalty, provide exclusive offers, and encourage referrals",6712,2131028.81,317.4953530989273
+At Risk,Send re-engagement campaigns and limited-time offers,14357,1045816.06,72.84363446402452
+Low Value,Use low-cost promotions and product recommendations,3083,167779.95,54.421002270515736
