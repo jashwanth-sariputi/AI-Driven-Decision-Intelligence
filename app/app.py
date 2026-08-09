@@ -1,276 +1,448 @@
-import sys
-import os
-
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
-)
-
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 import streamlit as st
-import pandas as pd
+import os
+import sys
 
-from src.dataset_intelligence.dataset_detector import DatasetDetector
-from src.dataset_intelligence.column_mapper import ColumnMapper
-from src.dataset_intelligence.recommendation_engine import RecommendationEngine
-from src.dataset_intelligence.quality_engine import QualityEngine
-from src.dataset_intelligence.insight_engine import InsightEngine
 from src.database.database import Database
+from src.auth.auth import Auth
 
-from src.reporting.report_generator import ExecutiveReportGenerator
-from src.reporting.pdf_report import PDFReportGenerator
-
-# ---------------------------------------------------
+# ---------------------------------------------------------
 # PAGE CONFIGURATION
-# ---------------------------------------------------
+# ---------------------------------------------------------
 
 st.set_page_config(
-    page_title="AI-Driven Decision Intelligence Platform",
+    page_title="Nex Decision AI",
     page_icon="🤖",
     layout="wide"
 )
-st.sidebar.title("🚀 AI-Driven Decision Intelligence")
 
-st.sidebar.markdown("---")
+# ---------------------------------------------------------
+# CUSTOM CSS
+# ---------------------------------------------------------
 
-st.sidebar.success("Enterprise AI Analytics Platform")
+st.markdown("""
+<style>
 
-st.sidebar.markdown("---")
+    /* Main background */
+    .stApp {
+        background: #f5f7fb;
+    }
 
-if "username" in st.session_state:
-    st.sidebar.success(
-        f"👤 {st.session_state['username']}"
+    /* Remove unnecessary top spacing */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    /* Main title */
+    .nex-title {
+        font-size: 38px;
+        font-weight: 800;
+        color: #172033;
+        margin-bottom: 5px;
+    }
+
+    .nex-subtitle {
+        font-size: 16px;
+        color: #6b7280;
+        margin-bottom: 25px;
+    }
+
+    /* Login card */
+    .login-card {
+        background: white;
+        padding: 40px;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        border: 1px solid #e8ebf0;
+        min-height: 500px;
+    }
+
+    /* About card */
+    .about-card {
+        background: linear-gradient(
+            145deg,
+            #172554,
+            #1e3a8a
+        );
+        padding: 45px;
+        border-radius: 18px;
+        color: white;
+        min-height: 500px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .about-card h1 {
+        color: white;
+        font-size: 36px;
+        font-weight: 800;
+    }
+
+    .about-card h3 {
+        color: #dbeafe;
+        margin-top: 25px;
+    }
+
+    .about-card p {
+        color: #e5e7eb;
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    .feature {
+        background: rgba(255,255,255,0.10);
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-top: 10px;
+        color: #f8fafc;
+    }
+
+    /* Login buttons */
+    .stButton > button {
+        width: 100%;
+        border-radius: 9px;
+        height: 45px;
+        font-weight: 600;
+    }
+
+    /* Hide Streamlit default menu/footer */
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    footer {
+        visibility: hidden;
+    }
+
+    header {
+        visibility: hidden;
+    }
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# SESSION STATE
+# ---------------------------------------------------------
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+# ---------------------------------------------------------
+# DATABASE / AUTH
+# ---------------------------------------------------------
+
+database = Database()
+auth = Auth()
+
+# ---------------------------------------------------------
+# ALREADY LOGGED IN
+# ---------------------------------------------------------
+
+if st.session_state.logged_in:
+
+    st.success(
+        f"Welcome back, {st.session_state.username} 👋"
     )
 
-if "filename" in st.session_state:
-    st.sidebar.info(
-        f"📂 {st.session_state['filename']}"
+    st.info(
+        "You are already logged in to Nex Decision AI."
     )
 
-st.sidebar.markdown("---")
+    if st.button("🚪 Logout"):
 
-st.sidebar.success("🟢 AI Engine Online")
-# ---------------------------------------------------
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+
+        st.success("Logged out successfully.")
+
+        st.rerun()
+
+    st.stop()
+
+# ---------------------------------------------------------
 # HEADER
-# ---------------------------------------------------
+# ---------------------------------------------------------
 
-st.title("🤖 AI-Driven Decision Intelligence Platform")
-st.caption("Transforming Business Data into Intelligent Decisions")
-
-st.markdown("---")
-
-# ---------------------------------------------------
-# DATASET UPLOAD
-# ---------------------------------------------------
-
-st.header("📂 Upload Dataset")
-
-uploaded_file = st.file_uploader(
-    "Upload a CSV file",
-    type=["csv"]
+st.markdown(
+    '<div class="nex-title">Nex Decision AI</div>',
+    unsafe_allow_html=True
 )
 
-# ---------------------------------------------------
-# PROCESS DATASET
-# ---------------------------------------------------
+st.markdown(
+    '<div class="nex-subtitle">'
+    'AI-powered business intelligence and decision support platform'
+    '</div>',
+    unsafe_allow_html=True
+)
 
-if uploaded_file is not None:
+# ---------------------------------------------------------
+# TWO PANEL LAYOUT
+# ---------------------------------------------------------
 
-    # Read Dataset
-    df = pd.read_csv(uploaded_file)
-   
+left, right = st.columns(
+    [1, 1.15],
+    gap="large"
+)
 
-    # Store dataset for other pages
-    st.session_state["dataset"] = df
-    st.session_state["uploaded_filename"] = uploaded_file.name
+# =========================================================
+# LEFT PANEL - LOGIN
+# =========================================================
 
-    # Dataset Detection
-    detector = DatasetDetector(df)
+with left:
 
-    report = detector.analyze_dataset()
-    dataset_type, confidence = detector.detect_dataset_type()
-    compatibility, reason = detector.check_compatibility()
-    # Save upload history
-    database = Database()
+    st.markdown(
+        '<div class="login-card">',
+        unsafe_allow_html=True
+    )
 
-    if "last_uploaded_file" not in st.session_state:
-        st.session_state["last_uploaded_file"] = ""
+    st.subheader("🔐 Welcome Back")
 
-    if st.session_state["last_uploaded_file"] != uploaded_file.name:
+    st.write(
+        "Sign in to access your AI-powered business analytics."
+    )
 
-        database.save_upload(
-            uploaded_file.name,
-            len(df),
-            len(df.columns),
-            dataset_type
+    st.markdown("---")
+
+    menu = st.radio(
+        "Account",
+        ["🔑 Login", "📝 Register"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+
+    st.markdown("---")
+
+    # -----------------------------------------------------
+    # LOGIN
+    # -----------------------------------------------------
+
+    if menu == "🔑 Login":
+
+        username = st.text_input(
+            "Email / Username",
+            placeholder="Enter your email or username"
         )
 
-        st.session_state["last_uploaded_file"] = uploaded_file.name
+        password = st.text_input(
+            "Password",
+            type="password",
+            placeholder="Enter your password"
+        )
 
-        st.success("✅ Upload saved to history.")
+        if st.button(
+            "🚀 Login",
+            use_container_width=True
+        ):
 
-    # Column Mapping
-    mapper = ColumnMapper(df.columns)
-    mapped_columns = mapper.map_columns()
+            if (
+                username.strip() == ""
+                or password.strip() == ""
+            ):
 
-    # Recommendation Engine
-    recommendation_engine = RecommendationEngine(dataset_type)
-    recommendations = recommendation_engine.recommend()
+                st.warning(
+                    "Please enter your username and password."
+                )
 
-    # Quality Engine
-    quality_engine = QualityEngine(df)
-    quality_report = quality_engine.generate_quality_report()
+            else:
 
-    # Insight Engine
-    insight_engine = InsightEngine(
-        dataset_type,
-        quality_report,
-        compatibility
-    )
+                user = database.get_user(username)
 
-    insights = insight_engine.generate_insights()
+                if user is None:
 
-    # Executive Report
-    report_generator = ExecutiveReportGenerator(
-        dataset_type,
-        quality_report,
-        compatibility,
-        recommendations,
-        insights
-    )
+                    st.error(
+                        "We couldn't find an account with those details."
+                    )
 
-    executive_report = report_generator.generate_report()
+                else:
 
-    # ---------------------------------------------------
-    # Dataset Analysis
-    # ---------------------------------------------------
+                    try:
 
-    st.subheader("📊 Dataset Analysis Report")
-    st.write(report)
+                        valid = auth.verify_password(
+                            password,
+                            user[2]
+                        )
 
-    # Dataset Type
+                        if valid:
 
-    st.subheader("📂 Dataset Type")
-    st.success(dataset_type)
-    st.metric("Confidence", f"{confidence}%")
+                            st.session_state.logged_in = True
+                            st.session_state.username = username
 
-    # Compatibility
+                            st.success(
+                                "Login successful! Welcome to Nex Decision AI."
+                            )
 
-    st.subheader("✅ Compatibility Check")
+                            st.rerun()
 
-    if compatibility == "Compatible":
-        st.success(compatibility)
+                        else:
+
+                            st.error(
+                                "The password you entered is incorrect."
+                            )
+
+                    except Exception:
+
+                        st.error(
+                            "We couldn't complete the login. "
+                            "Please try again."
+                        )
+
+    # -----------------------------------------------------
+    # REGISTER
+    # -----------------------------------------------------
+
     else:
-        st.error(compatibility)
 
-    st.info(reason)
+        st.subheader("📝 Create Account")
 
-    # Dataset Preview
-
-    st.success("Dataset uploaded successfully!")
-
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
-
-    # Dataset Information
-
-    st.subheader("Dataset Information")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric("Rows", report["Rows"])
-
-    with col2:
-        st.metric("Columns", report["Columns"])
-
-    with col3:
-        st.metric("Missing Values", report["Missing Values"])
-
-    st.subheader("Column Names")
-    st.write(list(df.columns))
-
-    # Column Mapping
-
-    st.subheader("🗂 Universal Column Mapping")
-    st.write(mapped_columns)
-
-    # Recommendations
-
-    st.subheader("🤖 Recommended AI Solutions")
-
-    for recommendation in recommendations:
-        st.success(recommendation)
-
-    # Data Quality
-
-    st.subheader("📈 AI Data Quality Report")
-
-    q1, q2 = st.columns(2)
-
-    with q1:
-        st.metric("Quality Score", quality_report["Quality Score"])
-        st.metric("Grade", quality_report["Grade"])
-        st.metric("Missing Values", quality_report["Missing Values"])
-
-    with q2:
-        st.metric("Rows", quality_report["Rows"])
-        st.metric("Columns", quality_report["Columns"])
-        st.metric("Duplicate Rows", quality_report["Duplicate Rows"])
-
-    st.write("### Quality Details")
-    st.write(quality_report)
-
-    # Business Insights
-
-    st.subheader("💡 AI Business Insights")
-
-    for insight in insights:
-        st.info(insight)
-
-    # Executive Report
-
-    st.subheader("📄 AI Executive Business Report")
-
-    st.text_area(
-        "Executive Report",
-        executive_report,
-        height=400
-    )
-
-    pdf = PDFReportGenerator()
-
-    pdf.generate(
-        executive_report,
-        "Executive_Report.pdf"
-    )
-
-    with open("Executive_Report.pdf", "rb") as file:
-
-        st.download_button(
-            label="📥 Download Executive PDF Report",
-            data=file,
-            file_name="Executive_Report.pdf",
-            mime="application/pdf"
+        username = st.text_input(
+            "Email / Username",
+            placeholder="Enter your email or username"
         )
 
-# ---------------------------------------------------
-# ABOUT
-# ---------------------------------------------------
+        password = st.text_input(
+            "Password",
+            type="password",
+            placeholder="Create a password"
+        )
+
+        confirm = st.text_input(
+            "Confirm Password",
+            type="password",
+            placeholder="Confirm your password"
+        )
+
+        if st.button(
+            "✨ Create Account",
+            use_container_width=True
+        ):
+
+            if (
+                username.strip() == ""
+                or password.strip() == ""
+            ):
+
+                st.warning(
+                    "Please complete all required fields."
+                )
+
+            elif password != confirm:
+
+                st.error(
+                    "The passwords do not match."
+                )
+
+            elif len(password) < 6:
+
+                st.warning(
+                    "Password should contain at least 6 characters."
+                )
+
+            else:
+
+                try:
+
+                    hashed = auth.hash_password(password)
+
+                    database.create_user(
+                        username,
+                        hashed
+                    )
+
+                    st.success(
+                        "🎉 Account created successfully!"
+                    )
+
+                    st.info(
+                        "You can now switch to Login and sign in."
+                    )
+
+                except Exception:
+
+                    st.error(
+                        "An account with this username already exists."
+                    )
+
+    st.markdown(
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+# =========================================================
+# RIGHT PANEL - ABOUT NEX DECISION AI
+# =========================================================
+
+with right:
+
+    st.markdown(
+        """
+        <div class="about-card">
+
+            <h1>🤖 Nex Decision AI</h1>
+
+            <p>
+            Nex Decision AI is an intelligent business analytics
+            platform designed to transform raw business data into
+            meaningful insights and better decisions.
+            </p>
+
+            <h3>What can Nex Decision AI do?</h3>
+
+            <div class="feature">
+            📊 Analyze business datasets
+            </div>
+
+            <div class="feature">
+            🧠 Generate intelligent business insights
+            </div>
+
+            <div class="feature">
+            🎯 Predict future business outcomes
+            </div>
+
+            <div class="feature">
+            📈 Forecast business trends
+            </div>
+
+            <div class="feature">
+            🤖 Automate machine learning workflows
+            </div>
+
+            <div class="feature">
+            🔍 Explain AI predictions
+            </div>
+
+            <div class="feature">
+            🚨 Detect business anomalies and risks
+            </div>
+
+            <div class="feature">
+            💬 Interact with AI through business chat
+            </div>
+
+            <h3>Built for smarter decisions</h3>
+
+            <p>
+            From dataset intelligence and forecasting to
+            prediction, dashboards, explainable AI and
+            executive reporting, Nex Decision AI brings
+            multiple decision-support capabilities together
+            in one platform.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ---------------------------------------------------------
+# FOOTER
+# ---------------------------------------------------------
 
 st.markdown("---")
 
-st.header("📌 About the Platform")
-
-st.write("""
-This platform helps organizations automatically analyze business datasets,
-predict customer churn,
-identify business risks,
-generate AI-powered recommendations,
-evaluate dataset quality,
-and provide intelligent business insights.
-""")
-
-st.markdown("---")
-
-st.success("Platform Initialized Successfully ✅")
+st.caption(
+    "Nex Decision AI • Intelligent Analytics • Smarter Decisions"
+)

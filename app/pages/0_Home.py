@@ -2,7 +2,7 @@ import streamlit as st
 from src.ui.theme import sidebar
 
 st.set_page_config(
-    page_title="AI-Driven Decision Intelligence",
+    page_title=" Nex Decision AI",
     page_icon="🤖",
     layout="wide"
 )
@@ -13,7 +13,7 @@ sidebar()
 # HERO SECTION
 # =====================================================
 
-st.title("🤖 AI-Driven Decision Intelligence Platform")
+st.title("🤖  Nex Decision AI")
 
 st.caption("Enterprise Business Analytics Suite powered by Artificial Intelligence")
 
@@ -170,5 +170,5 @@ st.markdown("---")
 # =====================================================
 
 st.caption(
-    "© 2026 S Jashwanth  | AI-Driven Decision Intelligence Platform | Version 2.0"
+    "© 2026 S Jashwanth  | Nex Decision AI | Version 2.0"
 )
