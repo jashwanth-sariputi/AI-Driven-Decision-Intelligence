@@ -1,10 +1,12 @@
 import streamlit as st
+import pandas as pd
+
 from src.ui.layout import page_header, ai_insight, page_footer
 
-import pandas as pd
-@st.cache_data
-def load_dataset(uploaded_file):
-    return pd.read_csv(uploaded_file)
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
     page_title="Upload Dataset",
@@ -12,96 +14,323 @@ st.set_page_config(
     layout="wide"
 )
 
+
+# ============================================================
+# LOAD DATASET
+# ============================================================
+
+@st.cache_data
+def load_dataset(file_bytes, filename):
+    """
+    Load CSV or Excel dataset safely.
+    """
+
+    try:
+        if filename.lower().endswith(".csv"):
+            from io import BytesIO
+            return pd.read_csv(BytesIO(file_bytes))
+
+        elif filename.lower().endswith(".xlsx"):
+            from io import BytesIO
+            return pd.read_excel(BytesIO(file_bytes))
+
+        elif filename.lower().endswith(".xls"):
+            from io import BytesIO
+            return pd.read_excel(BytesIO(file_bytes))
+
+        else:
+            return None
+
+    except Exception:
+        return None
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
 page_header(
     "📂 Upload Dataset",
-    "Upload a CSV or Excel dataset to begin AI-powered business analytics."
+    "Upload a business dataset to begin AI-powered business analytics."
 )
 
-st.markdown("""
-Upload your business dataset to begin AI-powered analysis.
 
-Supported formats:
+# ============================================================
+# INTRODUCTION
+# ============================================================
 
-- CSV ✅
-- Excel (.xlsx) 🔜
-- SQL Database 🔜
-- API 🔜
-""")
+st.markdown(
+    """
+    ### Upload your business dataset
+
+    Nex Decision AI automatically analyzes your dataset and provides:
+
+    - 📊 Dataset statistics
+    - 🔍 Dataset type detection
+    - 🧹 Data quality analysis
+    - 🗂 Column intelligence
+    - 🤖 AI solution recommendations
+    - 💡 Business insights
+    - 📈 Machine learning opportunities
+    """
+)
+
+
+# ============================================================
+# SUPPORTED FORMATS
+# ============================================================
+
+st.info(
+    """
+    **Supported formats**
+
+    📄 CSV  
+    📊 Excel (.xlsx / .xls)
+    """
+)
+
+
+# ============================================================
+# FILE UPLOADER
+# ============================================================
 
 uploaded_file = st.file_uploader(
-    "Choose a CSV file",
-    type=["csv"]
+    "Choose your dataset",
+    type=["csv", "xlsx", "xls"],
+    help="Upload a CSV or Excel business dataset."
 )
+
+
+# ============================================================
+# PROCESS UPLOADED DATASET
+# ============================================================
 
 if uploaded_file is not None:
 
-    with st.spinner("Uploading dataset..."):
-        df = load_dataset(uploaded_file)
+    try:
 
-    st.session_state["dataset"] = df
-    st.session_state["filename"] = uploaded_file.name
+        with st.spinner("Reading and validating your dataset..."):
 
-    st.success("✅ Dataset uploaded successfully!")
+            file_bytes = uploaded_file.getvalue()
 
-    st.success(
-        f"Dataset '{uploaded_file.name}' stored successfully."
-    )
+            df = load_dataset(
+                file_bytes,
+                uploaded_file.name
+            )
 
-    # ----------------------------------------
-    # Dataset Overview
-    # ----------------------------------------
+        # ----------------------------------------------------
+        # VALIDATION
+        # ----------------------------------------------------
 
-    st.subheader("📊 Dataset Overview")
+        if df is None:
 
-    c1, c2, c3, c4 = st.columns(4)
+            st.error(
+                "❌ We couldn't read this file. "
+                "Please upload a valid CSV or Excel dataset."
+            )
 
-    with c1:
-        st.metric("📄 Rows", len(df))
+            st.stop()
 
-    with c2:
-        st.metric("📊 Columns", len(df.columns))
 
-    with c3:
-        st.metric("⚠ Missing", int(df.isnull().sum().sum()))
+        if df.empty:
 
-    with c4:
-        st.metric("🔁 Duplicates", int(df.duplicated().sum()))
+            st.warning(
+                "⚠️ The uploaded dataset is empty. "
+                "Please upload a dataset containing data."
+            )
 
-    st.divider()
+            st.stop()
 
-    # ----------------------------------------
-    # Dataset Preview
-    # ----------------------------------------
 
-    with st.expander("📋 Preview Uploaded Dataset", expanded=True):
+        # ----------------------------------------------------
+        # STORE DATASET
+        # ----------------------------------------------------
 
-        st.dataframe(
-            df.head(),
-            use_container_width=True
+        st.session_state["dataset"] = df
+        st.session_state["filename"] = uploaded_file.name
+
+
+        # ----------------------------------------------------
+        # SUCCESS
+        # ----------------------------------------------------
+
+        st.success(
+            f"✅ Dataset '{uploaded_file.name}' uploaded successfully."
         )
 
-    st.divider()
 
-    # ----------------------------------------
-    # Dataset Shape
-    # ----------------------------------------
+        # ====================================================
+        # DATASET OVERVIEW
+        # ====================================================
 
-    st.subheader("📐 Dataset Shape")
+        st.subheader("📊 Dataset Overview")
 
-    col1, col2 = st.columns(2)
+        c1, c2, c3, c4 = st.columns(4)
 
-    with col1:
-        st.metric("Rows", df.shape[0])
+        with c1:
+            st.metric(
+                "📄 Rows",
+                f"{len(df):,}"
+            )
 
-    with col2:
-        st.metric("Columns", df.shape[1])
+        with c2:
+            st.metric(
+                "📊 Columns",
+                len(df.columns)
+            )
 
-    st.info(
-        "Navigate to the Dataset Intelligence page to analyze this dataset."
-    )
+        with c3:
+            st.metric(
+                "⚠ Missing Values",
+                f"{int(df.isnull().sum().sum()):,}"
+            )
+
+        with c4:
+            st.metric(
+                "🔁 Duplicate Rows",
+                f"{int(df.duplicated().sum()):,}"
+            )
+
+
+        st.divider()
+
+
+        # ====================================================
+        # DATASET PREVIEW
+        # ====================================================
+
+        st.subheader("📋 Dataset Preview")
+
+        st.dataframe(
+            df.head(10),
+            use_container_width=True,
+            hide_index=True
+        )
+
+
+        st.divider()
+
+
+        # ====================================================
+        # DATA TYPES
+        # ====================================================
+
+        st.subheader("🔎 Dataset Structure")
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            numeric_columns = len(
+                df.select_dtypes(
+                    include="number"
+                ).columns
+            )
+
+            st.metric(
+                "🔢 Numeric Columns",
+                numeric_columns
+            )
+
+        with c2:
+            categorical_columns = len(
+                df.select_dtypes(
+                    include=["object", "category"]
+                ).columns
+            )
+
+            st.metric(
+                "🔤 Categorical Columns",
+                categorical_columns
+            )
+
+        with c3:
+            datetime_columns = len(
+                df.select_dtypes(
+                    include=["datetime"]
+                ).columns
+            )
+
+            st.metric(
+                "📅 Date Columns",
+                datetime_columns
+            )
+
+
+        # ====================================================
+        # DATASET INFORMATION
+        # ====================================================
+
+        with st.expander(
+            "📋 View Dataset Information"
+        ):
+
+            st.write(
+                "### Column Names"
+            )
+
+            st.write(
+                list(df.columns)
+            )
+
+            st.write(
+                "### Data Types"
+            )
+
+            st.dataframe(
+                pd.DataFrame({
+                    "Column": df.columns,
+                    "Data Type": [
+                        str(dtype)
+                        for dtype in df.dtypes
+                    ]
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+
+
+        # ====================================================
+        # NEXT STEP
+        # ====================================================
+
+        st.success(
+            "🚀 Your dataset is ready for AI analysis."
+        )
+
+        st.info(
+            "Go to **Dataset Intelligence** from the sidebar "
+            "to analyze your dataset."
+        )
+
+
+    except Exception:
+
+        st.error(
+            """
+            ❌ We couldn't process this dataset.
+
+            Please check that:
+
+            • The file is a valid CSV or Excel file  
+            • The file is not corrupted  
+            • The dataset contains tabular data  
+
+            Then try uploading it again.
+            """
+        )
+
+
+# ============================================================
+# AI INSIGHT
+# ============================================================
 
 ai_insight(
-    "Supported formats include CSV and Excel. Ensure column names are clean and consistent for the best experience."
+    "Clean and well-structured business data helps Nex Decision AI generate more reliable insights and predictions."
 )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
 
 page_footer()

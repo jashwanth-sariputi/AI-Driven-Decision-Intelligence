@@ -1,11 +1,35 @@
 import streamlit as st
-from src.ui.layout import page_header, ai_insight, page_footer
 
-from src.dataset_intelligence.dataset_detector import DatasetDetector
-from src.dataset_intelligence.column_mapper import ColumnMapper
-from src.dataset_intelligence.recommendation_engine import RecommendationEngine
-from src.dataset_intelligence.quality_engine import QualityEngine
-from src.dataset_intelligence.insight_engine import InsightEngine
+from src.ui.layout import (
+    page_header,
+    ai_insight,
+    page_footer
+)
+
+from src.dataset_intelligence.dataset_detector import (
+    DatasetDetector
+)
+
+from src.dataset_intelligence.column_mapper import (
+    ColumnMapper
+)
+
+from src.dataset_intelligence.recommendation_engine import (
+    RecommendationEngine
+)
+
+from src.dataset_intelligence.quality_engine import (
+    QualityEngine
+)
+
+from src.dataset_intelligence.insight_engine import (
+    InsightEngine
+)
+
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
     page_title="Dataset Intelligence",
@@ -13,255 +37,520 @@ st.set_page_config(
     layout="wide"
 )
 
+
+# ============================================================
+# HEADER
+# ============================================================
+
 page_header(
     "🔍 Dataset Intelligence",
-    "Analyze dataset quality, structure, and statistical insights."
+    "Analyze dataset quality, structure, compatibility and business opportunities."
 )
 
-# --------------------------------------------------
-# Check Dataset
-# --------------------------------------------------
+
+# ============================================================
+# CHECK DATASET
+# ============================================================
 
 if "dataset" not in st.session_state:
 
-    st.warning("Please upload a dataset first.")
+    st.warning(
+        "📂 No dataset has been uploaded yet."
+    )
+
+    st.info(
+        "Please go to **Upload Dataset** and upload your CSV or Excel file first."
+    )
 
     st.stop()
 
+
+# ============================================================
+# LOAD DATASET
+# ============================================================
+
 df = st.session_state["dataset"]
-filename = st.session_state["filename"]
 
-st.success(f"✅ Dataset Loaded : {filename}")
+filename = st.session_state.get(
+    "filename",
+    "Uploaded Dataset"
+)
 
-# --------------------------------------------------
-# Analyze Dataset
-# --------------------------------------------------
 
-with st.spinner("Analyzing dataset..."):
+# ============================================================
+# DATASET LOADED
+# ============================================================
 
-    detector = DatasetDetector(df)
+st.success(
+    f"✅ Dataset Loaded: {filename}"
+)
 
-    report = detector.analyze_dataset()
 
-    dataset_type, confidence = detector.detect_dataset_type()
+# ============================================================
+# BASIC VALIDATION
+# ============================================================
 
-    compatibility, reason = detector.check_compatibility()
+if df is None or df.empty:
 
-    mapper = ColumnMapper(df.columns)
-
-    mapped_columns = mapper.map_columns()
-
-    recommendation_engine = RecommendationEngine(dataset_type)
-
-    recommendations = recommendation_engine.recommend()
-
-    quality_engine = QualityEngine(df)
-
-    quality_report = quality_engine.generate_quality_report()
-
-    insight_engine = InsightEngine(
-        dataset_type,
-        quality_report,
-        compatibility
+    st.error(
+        "❌ The dataset is empty or unavailable."
     )
 
-    insights = insight_engine.generate_insights()
+    st.info(
+        "Please return to Upload Dataset and upload the file again."
+    )
 
-st.success("✅ Dataset Analysis Completed Successfully!")
+    st.stop()
 
-# --------------------------------------------------
-# Dataset Overview
-# --------------------------------------------------
+
+# ============================================================
+# DATASET OVERVIEW
+# ============================================================
 
 st.subheader("📊 Dataset Overview")
 
+
 c1, c2, c3, c4 = st.columns(4)
 
+
 with c1:
-    st.metric("📄 Rows", len(df))
+
+    st.metric(
+        "📄 Rows",
+        f"{len(df):,}"
+    )
+
 
 with c2:
-    st.metric("📊 Columns", len(df.columns))
+
+    st.metric(
+        "📊 Columns",
+        len(df.columns)
+    )
+
 
 with c3:
-    st.metric("⚠ Missing", int(df.isnull().sum().sum()))
+
+    st.metric(
+        "⚠ Missing Values",
+        f"{int(df.isnull().sum().sum()):,}"
+    )
+
 
 with c4:
-    st.metric("🔁 Duplicates", int(df.duplicated().sum()))
+
+    st.metric(
+        "🔁 Duplicate Rows",
+        f"{int(df.duplicated().sum()):,}"
+    )
+
 
 st.divider()
 
-# --------------------------------------------------
-# Dataset Detection
-# --------------------------------------------------
 
-detector = DatasetDetector(df)
+# ============================================================
+# ANALYSIS
+# ============================================================
 
-report = detector.analyze_dataset()
+try:
 
-dataset_type, confidence = detector.detect_dataset_type()
+    with st.spinner(
+        "🧠 Nex Decision AI is analyzing your dataset..."
+    ):
 
-compatibility, reason = detector.check_compatibility()
+        # ----------------------------------------------------
+        # DATASET DETECTOR
+        # ----------------------------------------------------
 
-# --------------------------------------------------
-# Column Mapping
-# --------------------------------------------------
+        detector = DatasetDetector(df)
 
-mapper = ColumnMapper(df.columns)
+        report = detector.analyze_dataset()
 
-mapped_columns = mapper.map_columns()
+        dataset_type, confidence = (
+            detector.detect_dataset_type()
+        )
 
-# --------------------------------------------------
-# Recommendation Engine
-# --------------------------------------------------
+        compatibility, reason = (
+            detector.check_compatibility()
+        )
 
-recommendation_engine = RecommendationEngine(dataset_type)
 
-recommendations = recommendation_engine.recommend()
+        # ----------------------------------------------------
+        # COLUMN MAPPER
+        # ----------------------------------------------------
 
-# --------------------------------------------------
-# Quality Engine
-# --------------------------------------------------
+        mapper = ColumnMapper(
+            df.columns
+        )
 
-quality_engine = QualityEngine(df)
+        mapped_columns = (
+            mapper.map_columns()
+        )
 
-quality_report = quality_engine.generate_quality_report()
 
-# --------------------------------------------------
-# Insight Engine
-# --------------------------------------------------
+        # ----------------------------------------------------
+        # RECOMMENDATION ENGINE
+        # ----------------------------------------------------
 
-insight_engine = InsightEngine(
-    dataset_type,
-    quality_report,
-    compatibility
-)
+        recommendation_engine = (
+            RecommendationEngine(
+                dataset_type
+            )
+        )
 
-insights = insight_engine.generate_insights()
+        recommendations = (
+            recommendation_engine.recommend()
+        )
 
-# --------------------------------------------------
-# Dataset Analysis
-# --------------------------------------------------
 
-st.subheader("📊 Dataset Analysis")
+        # ----------------------------------------------------
+        # QUALITY ENGINE
+        # ----------------------------------------------------
 
-with st.expander("📋 View Dataset Analysis", expanded=True):
+        quality_engine = QualityEngine(
+            df
+        )
 
-    st.write(report)
+        quality_report = (
+            quality_engine.generate_quality_report()
+        )
+
+
+        # ----------------------------------------------------
+        # INSIGHT ENGINE
+        # ----------------------------------------------------
+
+        insight_engine = InsightEngine(
+            dataset_type,
+            quality_report,
+            compatibility
+        )
+
+        insights = (
+            insight_engine.generate_insights()
+        )
+
+
+    st.success(
+        "✅ Dataset analysis completed successfully."
+    )
+
+
+except Exception:
+
+    st.error(
+        """
+        ❌ Nex Decision AI could not complete the dataset analysis.
+
+        This usually happens when the uploaded dataset has an
+        unusual structure or unsupported columns.
+
+        Your dataset is still safely stored.
+
+        You can continue using the other features of the platform.
+        """
+    )
+
+    st.stop()
+
+
+# ============================================================
+# DATASET ANALYSIS
+# ============================================================
+
+st.subheader("📋 Dataset Analysis")
+
+
+with st.expander(
+    "View Dataset Analysis",
+    expanded=True
+):
+
+    if isinstance(report, dict):
+
+        st.json(report)
+
+    else:
+
+        st.write(report)
+
 
 st.divider()
 
-# --------------------------------------------------
-# Dataset Type
-# --------------------------------------------------
+
+# ============================================================
+# DATASET TYPE
+# ============================================================
 
 st.subheader("📂 Dataset Type")
 
+
 c1, c2 = st.columns(2)
 
+
 with c1:
-    st.success(dataset_type)
+
+    st.info(
+        f"Detected Type: **{dataset_type}**"
+    )
+
 
 with c2:
+
     st.metric(
         "Confidence",
         f"{confidence}%"
     )
 
+
 st.divider()
 
-# --------------------------------------------------
-# Compatibility
-# --------------------------------------------------
 
-st.subheader("✅ Compatibility")
+# ============================================================
+# COMPATIBILITY
+# ============================================================
 
-if compatibility == "Compatible":
+st.subheader("✅ Dataset Compatibility")
 
-    st.success(compatibility)
+
+if str(compatibility).lower() == "compatible":
+
+    st.success(
+        "✅ Dataset is compatible with Nex Decision AI."
+    )
 
 else:
 
-    st.error(compatibility)
+    st.warning(
+        f"⚠️ {compatibility}"
+    )
 
-st.info(reason)
 
-st.divider()
+st.info(
+    reason
+)
 
-# --------------------------------------------------
-# Column Mapping
-# --------------------------------------------------
-
-st.subheader("🗂 Universal Column Mapping")
-
-with st.expander("📋 View Column Mapping"):
-
-    st.write(mapped_columns)
 
 st.divider()
 
-# --------------------------------------------------
-# Recommendations
-# --------------------------------------------------
 
-st.subheader("🤖 Recommended AI Solutions")
+# ============================================================
+# COLUMN MAPPING
+# ============================================================
 
-for item in recommendations:
+st.subheader(
+    "🗂 Universal Column Mapping"
+)
 
-    st.success(item)
+
+with st.expander(
+    "View Detected Column Mapping"
+):
+
+    if isinstance(
+        mapped_columns,
+        dict
+    ):
+
+        for key, value in mapped_columns.items():
+
+            st.write(
+                f"**{key}:** {value}"
+            )
+
+    else:
+
+        st.write(
+            mapped_columns
+        )
+
 
 st.divider()
 
-# --------------------------------------------------
-# Quality Report
-# --------------------------------------------------
 
-st.subheader("📈 Data Quality")
+# ============================================================
+# RECOMMENDED AI SOLUTIONS
+# ============================================================
 
-c1, c2 = st.columns(2)
+st.subheader(
+    "🤖 Recommended AI Solutions"
+)
+
+
+if recommendations:
+
+    for item in recommendations:
+
+        st.success(
+            f"💡 {item}"
+        )
+
+else:
+
+    st.info(
+        "No specific AI recommendations were generated."
+    )
+
+
+st.divider()
+
+
+# ============================================================
+# DATA QUALITY
+# ============================================================
+
+st.subheader(
+    "📈 Data Quality"
+)
+
+
+try:
+
+    quality_score = quality_report.get(
+        "Quality Score",
+        "Unknown"
+    )
+
+    grade = quality_report.get(
+        "Grade",
+        "Unknown"
+    )
+
+    rows = quality_report.get(
+        "Rows",
+        len(df)
+    )
+
+    columns = quality_report.get(
+        "Columns",
+        len(df.columns)
+    )
+
+
+except Exception:
+
+    quality_score = "Unknown"
+    grade = "Unknown"
+    rows = len(df)
+    columns = len(df.columns)
+
+
+c1, c2, c3, c4 = st.columns(4)
+
 
 with c1:
 
     st.metric(
         "Quality Score",
-        quality_report["Quality Score"]
+        quality_score
     )
 
-    st.metric(
-        "Grade",
-        quality_report["Grade"]
-    )
 
 with c2:
 
     st.metric(
-        "Rows",
-        quality_report["Rows"]
+        "Grade",
+        grade
     )
+
+
+with c3:
+
+    st.metric(
+        "Rows",
+        f"{rows:,}"
+    )
+
+
+with c4:
 
     st.metric(
         "Columns",
-        quality_report["Columns"]
+        columns
     )
 
-with st.expander("📋 View Complete Quality Report"):
 
-    st.write(quality_report)
+with st.expander(
+    "📋 View Complete Quality Report"
+):
+
+    if isinstance(
+        quality_report,
+        dict
+    ):
+
+        st.json(
+            quality_report
+        )
+
+    else:
+
+        st.write(
+            quality_report
+        )
+
 
 st.divider()
 
-# --------------------------------------------------
-# Business Insights
-# --------------------------------------------------
 
-st.subheader("💡 AI Business Insights")
+# ============================================================
+# BUSINESS INSIGHTS
+# ============================================================
 
-for insight in insights:
+st.subheader(
+    "💡 AI Business Insights"
+)
 
-    st.info(insight)
+
+if insights:
+
+    for insight in insights:
+
+        st.info(
+            f"💡 {insight}"
+        )
+
+else:
+
+    st.info(
+        "No additional business insights were generated."
+    )
+
+
+st.divider()
+
+
+# ============================================================
+# DATASET PREVIEW
+# ============================================================
+
+st.subheader(
+    "📋 Dataset Preview"
+)
+
+
+with st.expander(
+    "View Uploaded Dataset"
+):
+
+    st.dataframe(
+        df.head(20),
+        use_container_width=True,
+        hide_index=True
+    )
+
+
+# ============================================================
+# AI INSIGHT
+# ============================================================
 
 ai_insight(
-    "Understanding your dataset before model training leads to better machine learning performance."
+    "Understanding your dataset before machine learning helps improve model selection, data quality and business decision-making."
 )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
 
 page_footer()

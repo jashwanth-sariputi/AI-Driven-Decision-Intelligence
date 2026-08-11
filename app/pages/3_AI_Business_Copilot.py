@@ -1,6 +1,12 @@
 import streamlit as st
+
 from src.ui.layout import page_header, ai_insight, page_footer
 from src.business_copilot.copilot_engine import BusinessCopilot
+
+
+# =========================================================
+# PAGE CONFIGURATION
+# =========================================================
 
 st.set_page_config(
     page_title="AI Business Copilot",
@@ -8,147 +14,335 @@ st.set_page_config(
     layout="wide"
 )
 
+
+# =========================================================
+# HEADER
+# =========================================================
+
 page_header(
     "🤖 AI Business Copilot",
-    "Your Intelligent Business Decision Assistant"
+    "Your intelligent business decision assistant"
 )
 
-# =====================================================
+
+# =========================================================
 # CHECK DATASET
-# =====================================================
+# =========================================================
 
 if "dataset" not in st.session_state:
-    st.warning("Please upload a dataset first.")
+
+    st.warning(
+        "📂 Please upload a dataset first."
+    )
+
+    st.info(
+        "Go to **Upload Dataset** from the sidebar "
+        "and upload your business dataset."
+    )
+
     st.stop()
+
+
+# =========================================================
+# LOAD DATASET
+# =========================================================
 
 df = st.session_state["dataset"]
 
-copilot = BusinessCopilot(df)
+filename = st.session_state.get(
+    "filename",
+    "Uploaded Dataset"
+)
 
-summary = copilot.executive_summary()
-score = copilot.business_score()
 
-# =====================================================
-# KPI DASHBOARD
-# =====================================================
+# =========================================================
+# INITIALIZE COPILOT
+# =========================================================
+
+try:
+
+    copilot = BusinessCopilot(df)
+
+    summary = copilot.executive_summary()
+
+    score = copilot.business_score()
+
+except Exception:
+
+    st.error(
+        "⚠️ The AI Business Copilot could not analyze "
+        "this dataset."
+    )
+
+    st.info(
+        "Please check the uploaded dataset and try again."
+    )
+
+    st.stop()
+
+
+# =========================================================
+# DATASET STATUS
+# =========================================================
+
+st.success(
+    f"✅ Dataset loaded successfully: **{filename}**"
+)
+
+st.markdown("---")
+
+
+# =========================================================
+# EXECUTIVE OVERVIEW
+# =========================================================
 
 st.subheader("📊 Executive Overview")
 
+
 c1, c2, c3, c4 = st.columns(4)
 
+
 with c1:
-    st.metric("Rows", summary["Rows"])
+
+    st.metric(
+        "📄 Rows",
+        f"{summary['Rows']:,}"
+    )
+
 
 with c2:
-    st.metric("Columns", summary["Columns"])
+
+    st.metric(
+        "📊 Columns",
+        summary["Columns"]
+    )
+
 
 with c3:
-    st.metric("Missing", summary["Missing"])
+
+    st.metric(
+        "⚠️ Missing Values",
+        summary["Missing"]
+    )
+
 
 with c4:
-    st.metric("Duplicates", summary["Duplicates"])
+
+    st.metric(
+        "🔁 Duplicate Rows",
+        summary["Duplicates"]
+    )
+
 
 st.markdown("---")
 
-# =====================================================
-# BUSINESS HEALTH
-# =====================================================
+
+# =========================================================
+# BUSINESS HEALTH SCORE
+# =========================================================
 
 st.subheader("💚 Business Health Score")
 
-st.progress(score / 100)
+
+try:
+
+    score = float(score)
+
+except Exception:
+
+    score = 0
+
+
+score = max(0, min(100, score))
+
+
+st.progress(
+    score / 100
+)
+
 
 if score >= 90:
-    st.success(f"Excellent Dataset ({score}/100)")
+
+    st.success(
+        f"🟢 Excellent Dataset Quality — {score:.0f}/100"
+    )
+
 elif score >= 75:
-    st.info(f"Good Dataset ({score}/100)")
+
+    st.info(
+        f"🔵 Good Dataset Quality — {score:.0f}/100"
+    )
+
 elif score >= 60:
-    st.warning(f"Average Dataset ({score}/100)")
+
+    st.warning(
+        f"🟡 Average Dataset Quality — {score:.0f}/100"
+    )
+
 else:
-    st.error(f"Poor Dataset ({score}/100)")
+
+    st.error(
+        f"🔴 Dataset Needs Improvement — {score:.0f}/100"
+    )
+
 
 st.markdown("---")
 
-# =====================================================
+
+# =========================================================
 # EXECUTIVE SUMMARY
-# =====================================================
+# =========================================================
 
 st.subheader("📄 Executive Summary")
 
-st.info(f"""
-Dataset contains **{summary['Rows']:,} rows** and **{summary['Columns']} columns**.
 
-Missing Values : **{summary['Missing']}**
+st.info(
+    f"""
+    **Dataset Size:** {summary['Rows']:,} rows × {summary['Columns']} columns
 
-Duplicate Rows : **{summary['Duplicates']}**
+    **Missing Values:** {summary['Missing']:,}
 
-Business Health Score : **{score}/100**
-""")
+    **Duplicate Rows:** {summary['Duplicates']:,}
+
+    **Business Health Score:** {score:.0f}/100
+
+    The AI Business Copilot evaluates your dataset and
+    provides recommendations, risks, opportunities and
+    decision-support insights.
+    """
+)
+
 
 st.markdown("---")
 
-# =====================================================
-# AI RECOMMENDATIONS
-# =====================================================
 
-left, right = st.columns([2,1])
+# =========================================================
+# AI RECOMMENDATIONS
+# =========================================================
+
+left, right = st.columns(
+    [2, 1],
+    gap="large"
+)
+
+
+# =========================================================
+# LEFT - RECOMMENDATIONS
+# =========================================================
 
 with left:
 
     st.subheader("🤖 AI Recommendations")
 
-    for rec in copilot.recommendations():
-        st.success(rec)
+    try:
+
+        recommendations = copilot.recommendations()
+
+        if recommendations:
+
+            for recommendation in recommendations:
+
+                st.success(
+                    f"💡 {recommendation}"
+                )
+
+        else:
+
+            st.info(
+                "No additional recommendations were generated."
+            )
+
+    except Exception:
+
+        st.warning(
+            "AI recommendations are currently unavailable."
+        )
+
+
+# =========================================================
+# RIGHT - NEXT STEPS
+# =========================================================
 
 with right:
 
     st.subheader("⚡ Suggested Next Steps")
 
-    st.info("✔ Analyze Dataset")
+    st.info("📊 Analyze Dataset")
 
-    st.info("✔ Train AutoML")
+    st.info("⚙️ Train AutoML")
 
-    st.info("✔ Generate Forecast")
+    st.info("📈 Generate Forecast")
 
-    st.info("✔ Predict Business Outcomes")
+    st.info("🎯 Predict Business Outcomes")
 
-    st.info("✔ Download Executive Report")
+    st.info("📄 Generate Executive Report")
+
 
 st.markdown("---")
 
-# =====================================================
+
+# =========================================================
 # BUSINESS RISK ANALYSIS
-# =====================================================
+# =========================================================
 
 st.subheader("🚨 Business Risk Analysis")
 
+
 risks = []
 
+
 if summary["Missing"] > 0:
-    risks.append("Missing values may reduce prediction accuracy.")
+
+    risks.append(
+        "Missing values may reduce machine learning performance."
+    )
+
 
 if summary["Duplicates"] > 0:
-    risks.append("Duplicate records may bias machine learning models.")
+
+    risks.append(
+        "Duplicate records may introduce bias into analysis and models."
+    )
+
 
 if len(df.columns) < 5:
-    risks.append("Limited features may reduce business insights.")
+
+    risks.append(
+        "The dataset contains limited features for advanced analysis."
+    )
+
+
+if len(df) < 100:
+
+    risks.append(
+        "The dataset contains relatively few records for reliable modeling."
+    )
+
 
 if len(risks) == 0:
 
-    st.success("No major business risks detected.")
+    st.success(
+        "🟢 No major business risks detected."
+    )
 
 else:
 
     for risk in risks:
-        st.warning(risk)
+
+        st.warning(
+            f"⚠️ {risk}"
+        )
+
 
 st.markdown("---")
 
-# =====================================================
+
+# =========================================================
 # AI OPPORTUNITIES
-# =====================================================
+# =========================================================
 
 st.subheader("🚀 AI Opportunities")
+
 
 opportunities = [
 
@@ -156,77 +350,125 @@ opportunities = [
 
     "Predict customer behaviour",
 
-    "Detect anomalies automatically",
+    "Detect unusual or anomalous records",
 
     "Build executive dashboards",
 
-    "Improve business decision making"
+    "Improve business decision making",
+
+    "Generate automated business reports"
 
 ]
 
-for item in opportunities:
-    st.success(item)
+
+for opportunity in opportunities:
+
+    st.success(
+        f"🚀 {opportunity}"
+    )
+
 
 st.markdown("---")
 
-# =====================================================
-# AI CHAT
-# =====================================================
+
+# =========================================================
+# AI BUSINESS CHAT
+# =========================================================
 
 st.subheader("💬 Ask AI Business Copilot")
 
+
 question = st.text_input(
-    "Ask a business question..."
+    "Ask a business question",
+    placeholder="Example: What are the major problems in this dataset?"
 )
 
+
 example_questions = [
+
     "Summarize this dataset",
+
     "What are the data quality issues?",
+
     "How ready is this dataset for machine learning?",
-    "Give business recommendations",
-    "What risks do you identify?"
+
+    "Give me business recommendations",
+
+    "What risks do you identify?",
+
+    "What AI solutions can be applied to this dataset?"
+
 ]
 
-selected = st.selectbox(
+
+selected_question = st.selectbox(
     "Or choose a sample question",
     [""] + example_questions
 )
 
-if selected:
-    question = selected
+
+if selected_question:
+
+    question = selected_question
+
 
 if question:
-    with st.spinner("Thinking..."):
 
-        answer = copilot.ask(question)
+    with st.spinner("🤖 Nex Decision AI is analyzing your question..."):
 
+        try:
 
-    st.markdown("### 🤖 AI Response")
+            answer = copilot.ask(question)
 
-    if hasattr(answer, "shape"):
+            st.markdown("### 🤖 Nex Decision AI Response")
 
-        st.dataframe(
-            answer,
-            use_container_width=True
-        )
+            if hasattr(answer, "shape"):
 
-    elif isinstance(answer, list):
+                st.dataframe(
+                    answer,
+                    use_container_width=True
+                )
 
-        for item in answer:
-            st.success(item)
+            elif isinstance(answer, list):
 
-    elif isinstance(answer, tuple):
+                for item in answer:
+                    st.success(str(item))
 
-        st.write(answer)
+            elif isinstance(answer, tuple):
 
-    else:
+                st.write(answer)
 
-        st.info(answer)
+            else:
+
+                st.info(str(answer))
+
+        except Exception:
+
+            st.warning(
+                "Nex Decision AI could not generate a response "
+                "for this question using the current dataset. "
+                "Please try another business question."
+            )
+
+        
 
 st.markdown("---")
 
+
+# =========================================================
+# AI INSIGHT
+# =========================================================
+
 ai_insight(
-    "The AI Business Copilot helps executives understand data quality, identify business opportunities, assess risks, and make data-driven decisions before building machine learning models."
+    "The AI Business Copilot helps executives understand "
+    "data quality, identify opportunities, assess risks, "
+    "and make data-driven decisions before building "
+    "machine learning models."
 )
+
+
+# =========================================================
+# FOOTER
+# =========================================================
 
 page_footer()
