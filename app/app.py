@@ -1,13 +1,14 @@
+
 import os
 import sys
 import streamlit as st
-
 
 # =========================================================
 # PROJECT PATH
 # =========================================================
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 PROJECT_ROOT = os.path.abspath(
     os.path.join(CURRENT_DIR, "..")
 )
@@ -38,14 +39,15 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
+if "user_email" not in st.session_state:
+    st.session_state.user_email = ""
+
+if "login_time" not in st.session_state:
+    st.session_state.login_time = ""
+
 
 # =========================================================
 # LOGIN PAGE
-#
-# IMPORTANT:
-# LoginPage.py is inside app/auth, NOT app/pages.
-# Therefore Streamlit will not automatically discover it
-# as another page.
 # =========================================================
 
 login_page = st.Page(
@@ -102,23 +104,14 @@ forecasting_page = st.Page(
     icon="📈"
 )
 
+# The merged Prediction Studio uses this single page.
 prediction_page = st.Page(
     "pages/7_Prediction.py",
-    title="Prediction",
-    icon="🔮"
+    title="Prediction Studio",
+    icon="🔮",
+    url_path="prediction-studio"
 )
 
-explainable_page = st.Page(
-    "pages/8_Explainable_AI.py",
-    title="Explainable AI",
-    icon="🔍"
-)
-
-predictor_page = st.Page(
-    "pages/9_AI_Predictor.py",
-    title="AI Predictor",
-    icon="🎯"
-)
 
 interactive_page = st.Page(
     "pages/9_Interactive_Dashboard.py",
@@ -126,11 +119,7 @@ interactive_page = st.Page(
     icon="📊"
 )
 
-kpi_page = st.Page(
-    "pages/10_KPI_Dashboard.py",
-    title="KPI Dashboard",
-    icon="📌"
-)
+
 
 chat_page = st.Page(
     "pages/11_AI_Chat.py",
@@ -170,32 +159,36 @@ report_page = st.Page(
 
 
 # =========================================================
-# LOGOUT FUNCTION
+# LOGOUT
 # =========================================================
 
 def logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
+    st.session_state.user_email = ""
+    st.session_state.login_time = ""
+
+    # Remove uploaded dataset from current session.
+    for key in ("dataset", "filename"):
+        st.session_state.pop(key, None)
 
 
 # =========================================================
-# BEFORE LOGIN
+# LOGIN STATE
 # =========================================================
 
 if not st.session_state.logged_in:
-
     pg = st.navigation(
         [login_page],
         position="hidden"
     )
 
     pg.run()
-
     st.stop()
 
 
 # =========================================================
-# AFTER LOGIN
+# AUTHENTICATED APPLICATION NAVIGATION
 # =========================================================
 
 pages = {
@@ -208,10 +201,9 @@ pages = {
         automl_page,
         forecasting_page,
         prediction_page,
-        explainable_page,
-        predictor_page,
+        
         interactive_page,
-        kpi_page,
+        
         chat_page,
         dataset_history_page,
         model_history_page,
@@ -227,27 +219,37 @@ pages = {
 # =========================================================
 
 with st.sidebar:
-
     st.markdown(
-        "## 🤖 Nex Decision AI"
+        """
+        <div style="
+            font-size:22px;
+            font-weight:700;
+            margin-bottom:5px;
+        ">
+            🤖 Nex Decision AI
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.caption(
-        f"Signed in as: {st.session_state.username}"
+        f"👤 Signed in as: {st.session_state.username}"
     )
+
+    if st.session_state.user_email:
+        st.caption(
+            f"📧 {st.session_state.user_email}"
+        )
 
     st.divider()
 
-    if st.button(
-        "🚪 Logout",
-        use_container_width=True
-    ):
+    if st.button("🚪 Logout", width="stretch"):
         logout()
         st.rerun()
 
 
 # =========================================================
-# NAVIGATION
+# APPLICATION NAVIGATION
 # =========================================================
 
 pg = st.navigation(
